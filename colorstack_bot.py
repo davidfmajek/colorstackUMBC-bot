@@ -11,14 +11,12 @@ channel to its step role; hide them from @everyone. Enable Server
 Members + Message Content intents. Owner commands: !post_start,
 !post_rules.
 """
-
 import os
 import re
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-# ============ CONFIG - FILL THESE IN ============
 GUILD_ID = 1537453892424564738  # ColorStack@UMBC
 
 ROLE_VERIFYING = 1549830086809886721
@@ -34,14 +32,13 @@ YEAR_ROLE_IDS = {
     1544355275912515770,  # Alumni
 }
 
-CHANNEL_START_HERE = 1537453893322154164
+CHANNEL_START_HERE = 1549842552536956939
 CHANNEL_WELCOME_RULES = 1537453893322154165
 CHANNEL_GET_ROLES = 1544355271504167012
 CHANNEL_INTRODUCTIONS = 1537474373961912390
 CHANNEL_LINKEDIN = 1545068257600344114
 
 BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "PASTE_YOUR_TOKEN_HERE")
-# ==================================================
 
 intents = discord.Intents.default()
 intents.members = True
