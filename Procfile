@@ -1,0 +1,1 @@
+worker: python colorstack_bot.py
