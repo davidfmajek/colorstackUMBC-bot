@@ -1,3 +1,17 @@
+"""
+ColorStack@UMBC onboarding bot.
+
+Flow: join (Verifying) -> Start button / name modal (Name Set) ->
+rules checkmark (Rules Agreed) -> year role via Carl-bot -> intro
+post (Intro Done) -> LinkedIn link (colorstackers).
+
+Setup: create Verifying, Name Set, Rules Agreed, Intro Done (above
+@everyone, below Admins). Fill CONFIG IDs. Gate each onboarding
+channel to its step role; hide them from @everyone. Enable Server
+Members + Message Content intents. Owner commands: !post_start,
+!post_rules.
+"""
+
 import os
 import re
 import discord
@@ -188,6 +202,7 @@ async def on_message(message: discord.Message):
 
 @bot.event
 async def on_ready():
+    bot.add_view(StartView())
     print(f"Logged in as {bot.user} - onboarding bot is live.")
 
 
