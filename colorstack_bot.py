@@ -149,13 +149,41 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
         return
 
     guild = bot.get_guild(payload.guild_id)
+    if guild is None:
+        return
+
     member = guild.get_member(payload.user_id)
-    if member is None or member.bot:
+    if member is None:
+        try:
+            member = await guild.fetch_member(payload.user_id)
+        except discord.NotFound:
+            return
+    if member.bot:
         return
 
     rules_agreed = guild.get_role(ROLE_RULES_AGREED)
-    if rules_agreed and rules_agreed not in member.roles:
+    if rules_agreed is None:
+        channel = bot.get_channel(payload.channel_id)
+        await channel.send(
+            "⚠️ ROLE_RULES_AGREED id in the config doesn't match any real role. Tell an officer.",
+            delete_after=15,
+        )
+        return
+
+    if rules_agreed in member.roles:
+        return  # already has it
+
+    try:
         await member.add_roles(rules_agreed)
+        channel = bot.get_channel(payload.channel_id)
+        await channel.send(f"✅ {member.mention} #get-roles is now unlocked for you.", delete_after=10)
+    except discord.Forbidden as e:
+        channel = bot.get_channel(payload.channel_id)
+        await channel.send(
+            f"⚠️ Couldn't give {member.mention} the Rules Agreed role: {e}. "
+            "Check that ColorStack Onboarding's role sits above Rules Agreed in Server Settings > Roles.",
+            delete_after=20,
+        )
 
 
 # ---------- Step 4 (year roles) handled by Carl-bot already ----------
@@ -175,29 +203,46 @@ async def on_message(message: discord.Message):
         intro_done = message.guild.get_role(ROLE_INTRO_DONE)
         has_year_role = any(r.id in YEAR_ROLE_IDS for r in member.roles)
         if has_year_role and intro_done and intro_done not in member.roles:
-            await member.add_roles(intro_done)
             try:
+                await member.add_roles(intro_done)
                 await message.channel.send(
                     f"Thanks for the intro, {member.mention}! #linkedin is now unlocked.",
                     delete_after=15,
                 )
-            except discord.Forbidden:
-                pass
+            except discord.Forbidden as e:
+                await message.channel.send(
+                    f"⚠️ Couldn't unlock #linkedin for {member.mention}: {e}. Tell an officer.",
+                    delete_after=20,
+                )
 
     elif message.channel.id == CHANNEL_LINKEDIN:
         member = message.author
         colorstackers = message.guild.get_role(ROLE_COLORSTACKERS)
         if LINKEDIN_PATTERN.search(message.content) and colorstackers and colorstackers not in member.roles:
-            await member.add_roles(colorstackers)
             try:
+                await member.add_roles(colorstackers)
                 await message.channel.send(
                     f"Welcome to the full server, {member.mention}! 🎉",
                     delete_after=15,
                 )
-            except discord.Forbidden:
-                pass
+            except discord.Forbidden as e:
+                await message.channel.send(
+                    f"⚠️ Couldn't grant colorstackers to {member.mention}: {e}. Tell an officer.",
+                    delete_after=20,
+                )
 
     await bot.process_commands(message)
+
+
+@bot.event
+async def on_command_error(ctx: commands.Context, error: commands.CommandError):
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send("You need Administrator permission to run this command.", delete_after=8)
+    elif isinstance(error, commands.CommandNotFound):
+        pass
+    else:
+        await ctx.send(f"⚠️ Command error: `{error}`", delete_after=15)
+        print(f"Command error: {error}")
 
 
 @bot.event
