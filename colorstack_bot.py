@@ -1,22 +1,10 @@
-"""
-ColorStack@UMBC onboarding bot.
-
-Flow: join (Verifying) -> Start button / name modal (Name Set) ->
-rules checkmark (Rules Agreed) -> year role via Carl-bot -> intro
-post (Intro Done) -> LinkedIn link (colorstackers).
-
-Setup: create Verifying, Name Set, Rules Agreed, Intro Done (above
-@everyone, below Admins). Fill CONFIG IDs. Gate each onboarding
-channel to its step role; hide them from @everyone. Enable Server
-Members + Message Content intents. Owner commands: !post_start,
-!post_rules.
-"""
 import os
 import re
 import discord
 from discord import app_commands
 from discord.ext import commands
 
+# ============ CONFIG - FILL THESE IN ============
 GUILD_ID = 1537453892424564738  # ColorStack@UMBC
 
 ROLE_VERIFYING = 1549830086809886721
@@ -39,6 +27,7 @@ CHANNEL_INTRODUCTIONS = 1537474373961912390
 CHANNEL_LINKEDIN = 1545068257600344114
 
 BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "PASTE_YOUR_TOKEN_HERE")
+# ==================================================
 
 intents = discord.Intents.default()
 intents.members = True
@@ -65,23 +54,38 @@ class NameModal(discord.ui.Modal, title="Welcome to ColorStack@UMBC!"):
         full_name = f"{self.first_name.value.strip()} {self.last_name.value.strip()}"
 
         try:
-            await member.edit(nick=full_name)
-        except discord.Forbidden:
-            pass  # bot may lack permission to rename this member (e.g. server owner)
+            try:
+                await member.edit(nick=full_name)
+            except discord.Forbidden:
+                pass  # bot may lack permission to rename this member (e.g. server owner/admin)
 
-        guild = interaction.guild
-        verifying = guild.get_role(ROLE_VERIFYING)
-        name_set = guild.get_role(ROLE_NAME_SET)
+            guild = interaction.guild
+            verifying = guild.get_role(ROLE_VERIFYING)
+            name_set = guild.get_role(ROLE_NAME_SET)
 
-        if verifying and verifying in member.roles:
-            await member.remove_roles(verifying)
-        if name_set:
-            await member.add_roles(name_set)
+            if verifying and verifying in member.roles:
+                await member.remove_roles(verifying)
+            if name_set:
+                await member.add_roles(name_set)
 
-        await interaction.response.send_message(
-            f"Thanks {self.first_name.value}! Head to #welcome-and-rules next.",
-            ephemeral=True,
-        )
+            await interaction.response.send_message(
+                f"Thanks {self.first_name.value}! Head to #welcome-and-rules next.",
+                ephemeral=True,
+            )
+        except discord.Forbidden as e:
+            await interaction.response.send_message(
+                f"⚠️ I couldn't finish setting you up: {e}\n"
+                "This usually means your account's role sits above mine in the role list, "
+                "or I'm missing a permission. An officer will need to check the role hierarchy "
+                "(Server Settings > Roles) and make sure ColorStack Onboarding sits above "
+                "Verifying/Name Set/Rules Agreed/Intro Done.",
+                ephemeral=True,
+            )
+        except Exception as e:
+            await interaction.response.send_message(
+                f"⚠️ Something went wrong: `{e}`. Please tell an officer.",
+                ephemeral=True,
+            )
 
 
 class StartView(discord.ui.View):
