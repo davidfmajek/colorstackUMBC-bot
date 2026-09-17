@@ -13,7 +13,6 @@ Members + Message Content intents. Owner commands: !post_start,
 """
 
 import os
-import re
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -24,7 +23,6 @@ GUILD_ID = 1537453892424564738  # ColorStack@UMBC
 ROLE_VERIFYING = 1549830086809886721
 ROLE_NAME_SET = 1549830229894107197
 ROLE_RULES_AGREED = 1549830337306173460
-ROLE_INTRO_DONE = 1549830367291252787
 ROLE_COLORSTACKERS = 1542663349207048202
 YEAR_ROLE_IDS = {
     1544355271676133437,  # Freshman
@@ -38,7 +36,6 @@ CHANNEL_START_HERE = 1549842552536956939
 CHANNEL_WELCOME_RULES = 1537453893322154165
 CHANNEL_GET_ROLES = 1544355271504167012
 CHANNEL_INTRODUCTIONS = 1537474373961912390
-CHANNEL_LINKEDIN = 1545068257600344114
 
 BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "PASTE_YOUR_TOKEN_HERE")
 # ==================================================
@@ -189,8 +186,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
 # ---------- Step 4 (year roles) handled by Carl-bot already ----------
 
 # ---------- Step 5: any message in #introductions -> Intro Done ----------
-# ---------- Step 6: LinkedIn link in #linkedin -> colorstackers ----------
-LINKEDIN_PATTERN = re.compile(r"linkedin\.com", re.IGNORECASE)
+# ---------- Step 5: any message in #introductions -> colorstackers (full access) ----------
 
 
 @bot.event
@@ -200,29 +196,14 @@ async def on_message(message: discord.Message):
 
     if message.channel.id == CHANNEL_INTRODUCTIONS:
         member = message.author
-        intro_done = message.guild.get_role(ROLE_INTRO_DONE)
-        has_year_role = any(r.id in YEAR_ROLE_IDS for r in member.roles)
-        if has_year_role and intro_done and intro_done not in member.roles:
-            try:
-                await member.add_roles(intro_done)
-                await message.channel.send(
-                    f"Thanks for the intro, {member.mention}! #linkedin is now unlocked.",
-                    delete_after=15,
-                )
-            except discord.Forbidden as e:
-                await message.channel.send(
-                    f"⚠️ Couldn't unlock #linkedin for {member.mention}: {e}. Tell an officer.",
-                    delete_after=20,
-                )
-
-    elif message.channel.id == CHANNEL_LINKEDIN:
-        member = message.author
         colorstackers = message.guild.get_role(ROLE_COLORSTACKERS)
-        if LINKEDIN_PATTERN.search(message.content) and colorstackers and colorstackers not in member.roles:
+        has_year_role = any(r.id in YEAR_ROLE_IDS for r in member.roles)
+        if has_year_role and colorstackers and colorstackers not in member.roles:
             try:
                 await member.add_roles(colorstackers)
                 await message.channel.send(
-                    f"Welcome to the full server, {member.mention}! 🎉",
+                    f"Welcome to the full server, {member.mention}! 🎉 "
+                    "Feel free to drop your LinkedIn in #linkedin if you'd like, totally optional.",
                     delete_after=15,
                 )
             except discord.Forbidden as e:
